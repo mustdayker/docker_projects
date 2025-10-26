@@ -1,0 +1,30 @@
+FROM jupyter/datascience-notebook:latest
+
+USER root
+
+# Установка системных зависимостей если нужны
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     some-package \
+#     && rm -rf /var/lib/apt/lists/*
+
+USER $NB_UID
+
+# Установка Python библиотек
+RUN pip install --no-cache-dir \
+    pandas \
+    numpy \
+    matplotlib \
+    seaborn \
+    scikit-learn \
+    plotly \
+    requests \
+    sqlalchemy \
+    psycopg2-binary \
+    beautifulsoup4 \
+    lxml
+
+# Можно также установить через conda
+# RUN conda install --yes \
+#     scikit-learn \
+#     plotly \
+#     && conda clean --all -f -y

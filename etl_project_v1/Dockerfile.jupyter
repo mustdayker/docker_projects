@@ -1,0 +1,40 @@
+# Берём базу от Spark — там уже есть всё для S3A
+FROM apache/spark:3.5.0
+
+# Устанавливаем JupyterLab и Python-пакеты
+USER root
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Устанавливаем Jupyter
+RUN pip install --no-cache-dir \
+    jupyterlab \
+    pyspark \
+    boto3 \
+    s3fs \
+    findspark\
+    pandas \
+    numpy \
+    matplotlib \
+    seaborn \
+    scikit-learn \
+    plotly \
+    requests \
+    sqlalchemy \
+    psycopg2-binary \
+    beautifulsoup4 \
+    lxml
+
+# Создаём пользователя jovyan (как в официальных Jupyter-образах)
+RUN useradd -m -u 1000 -G sudo jovyan && \
+    chown -R jovyan:jovyan /home/jovyan
+
+USER jovyan
+WORKDIR /home/jovyan
+
+# Копируем конфиг Hadoop для MinIO
+COPY spark/conf/core-site.xml $SPARK_HOME/conf/
+
+# Запуск Jupyter
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=dataengineer"]

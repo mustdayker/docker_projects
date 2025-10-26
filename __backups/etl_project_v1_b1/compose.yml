@@ -1,0 +1,167 @@
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+      POSTGRES_MULTIPLE_DATABASES: "airflow,learn_base"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  airflow-init:
+    image: apache/airflow:2.7.1
+    container_name: airflow-init
+    command: >
+      bash -c "
+        echo 'Waiting for PostgreSQL...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        echo 'Initializing Airflow database...' &&
+        airflow db init &&
+        echo 'Creating admin user...' &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || echo 'User already exists' &&
+        echo 'Airflow initialization completed!'"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - postgres-db
+    networks:
+      - data-eng-net
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    container_name: airflow-scheduler
+    command: >
+      bash -c "
+        echo 'Waiting for Airflow initialization...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        airflow scheduler"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 30
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - postgres-db
+      - airflow-init
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: airflow-webserver
+    command: >
+      bash -c "
+        echo 'Waiting for Airflow initialization...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        airflow webserver"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__WORKERS: 2
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-db
+      - airflow-init
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
+    container_name: jupyter-lab
+    environment:
+      JUPYTER_TOKEN: "dataengineer"
+      CHOWN_HOME: "yes"
+      CHOWN_HOME_OPTS: "-R"
+    volumes:
+      - ./jupyter/notebooks:/home/jovyan/work
+      - ./jupyter/data:/home/jovyan/data
+    ports:
+      - "8888:8888"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  superset:
+    image: amancevice/superset:latest
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: 'my-super-secret-key-for-learning'
+      SUPERSET_DB_HOST: postgres-db
+      SUPERSET_DB_PORT: 5432
+      SUPERSET_DB_USER: airflow
+      SUPERSET_DB_PASSWORD: airflow
+      SUPERSET_DB_NAME: learn_base
+      SUPERSET_LOAD_EXAMPLES: 'yes'
+    volumes:
+      - ./superset/data:/var/lib/superset
+    ports:
+      - "8088:8088"
+    depends_on:
+      - postgres-db
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+
+networks:
+  data-eng-net:
+    driver: bridge

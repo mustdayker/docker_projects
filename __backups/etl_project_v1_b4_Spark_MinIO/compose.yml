@@ -1,0 +1,414 @@
+services:
+
+  # ____________________________ POSTGRES ____________________________
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+      # POSTGRES_MULTIPLE_DATABASES: "airflow,learn_base"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ Экспортер метрик для PostgreSQL ____________________________
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://airflow:airflow@postgres-db:5432/airflow?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres-db
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9187/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________________ Airflow init ____________________________
+  airflow-init:
+    image: apache/airflow:2.7.1
+    container_name: airflow-init
+    command: >
+      bash -c "
+        echo 'Waiting for PostgreSQL...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        echo 'Initializing Airflow database...' &&
+        airflow db init &&
+        echo 'Creating admin user...' &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || echo 'User already exists' &&
+        echo 'Airflow initialization completed!'"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - postgres-db
+    networks:
+      - data-eng-net
+
+  # ___________________ AIRFLOW SCHEDULER ____________________________
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    container_name: airflow-scheduler
+    command: >
+      bash -c "
+        echo 'Waiting for Airflow initialization...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        airflow scheduler"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 30
+      # ИЗМЕНЕНО: Включены метрики Airflow
+      AIRFLOW__METRICS__STATSD_ON: "true"
+      AIRFLOW__METRICS__STATSD_HOST: statsd-exporter
+      AIRFLOW__METRICS__STATSD_PORT: 9125
+      AIRFLOW__METRICS__STATSD_PREFIX: "airflow"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - postgres-db
+      - airflow-init
+      - statsd-exporter
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+
+  # ____________________________ AIRFLOW WEBSERVER ____________________________
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: airflow-webserver
+    command: >
+      bash -c "
+        echo 'Waiting for Airflow initialization...' &&
+        until nc -z postgres-db 5432; do sleep 2; done &&
+        airflow webserver"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__WORKERS: 2
+      # ИЗМЕНЕНО: Включим метрики для Prometheus
+      AIRFLOW__METRICS__METRICS_ENABLED: "true"
+      AIRFLOW__METRICS__STATSD_ON: "true"
+      AIRFLOW__METRICS__STATSD_HOST: statsd-exporter
+      AIRFLOW__METRICS__STATSD_PORT: 9125
+      AIRFLOW__METRICS__STATSD_PREFIX: "airflow"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-db
+      - airflow-init
+      - statsd-exporter
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ____________________________ Node exporter для системных метрик ____________________________
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9100/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  # ____________________ StatsD экспортер для преобразования метрик Airflow в Prometheus
+  statsd-exporter:
+    image: prom/statsd-exporter:latest
+    container_name: statsd-exporter
+    command:
+      - --web.listen-address=:9102
+      - --statsd.listen-udp=:9125
+      - --statsd.listen-tcp=:9125
+    ports:
+      - "9102:9102"
+      - "9125:9125"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9102/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ JUPYTER ____________________________
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
+    container_name: jupyter-lab
+    environment:
+      JUPYTER_TOKEN: "dataengineer"
+      CHOWN_HOME: "yes"
+      CHOWN_HOME_OPTS: "-R"
+    volumes:
+      - ./jupyter/notebooks:/home/jovyan/work
+      - ./jupyter/data:/home/jovyan/data
+    ports:
+      - "8888:8888"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ SUPERSET ____________________________
+  superset:
+    image: amancevice/superset:latest
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: 'my-super-secret-key-for-learning'
+      SUPERSET_DB_HOST: postgres-db
+      SUPERSET_DB_PORT: 5432
+      SUPERSET_DB_USER: airflow
+      SUPERSET_DB_PASSWORD: airflow
+      SUPERSET_DB_NAME: learn_base
+      SUPERSET_LOAD_EXAMPLES: 'yes'
+    volumes:
+      - ./superset/data:/var/lib/superset
+    ports:
+      - "8088:8088"
+    depends_on:
+      - postgres-db
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+  # ____________________ Prometheus для сбора метрик ____________________________
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ Grafana для визуализации метрик ____________________________
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_JSON_ENABLED: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ cAdvisor для мониторинга ресурсов контейнеров
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8081:8080"
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+
+  # ____________________ SPARK MASTER ____________________________
+  spark-master:
+    image: apache/spark:3.5.0
+    container_name: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h spark-master
+    ports:
+      - "7077:7077"   # Spark master RPC
+      - "8085:8080"   # Web UI
+    environment:
+      SPARK_LOCAL_IP: spark-master
+      # Включаем Prometheus-метрики
+#      SPARK_DAEMON_JAVA_OPTS: >
+#        -Dspark.master.ui.prometheus.enabled=true
+#        -Dspark.ui.prometheus.enabled=true
+    volumes:
+      - ./spark/conf:/opt/spark/conf
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+
+  # ____________________ SPARK WORKER 1 ____________________________
+  spark-worker-1:
+    image: apache/spark:3.5.0
+    container_name: spark-worker-1
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      SPARK_WORKER_CORES: 10
+      SPARK_WORKER_MEMORY: 18g
+      SPARK_WORKER_PORT: 7078
+    ports:
+      - "8086:8081"   # Worker UI
+    volumes:
+      - ./spark/conf:/opt/spark/conf
+    depends_on:
+      - spark-master
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+
+  # ____________________ SPARK WORKER 2 ____________________________
+  spark-worker-2:
+    image: apache/spark:3.5.0
+    container_name: spark-worker-2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      SPARK_WORKER_CORES: 10
+      SPARK_WORKER_MEMORY: 18g
+      SPARK_WORKER_PORT: 7079
+    ports:
+      - "8087:8081"
+    volumes:
+      - ./spark/conf:/opt/spark/conf
+    depends_on:
+      - spark-master
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+
+
+  # ____________________ SPARK HISTORY SERVER ____________________________
+
+
+  # ____________________ MINIO ____________________________
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Web Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_PROMETHEUS_AUTH_TYPE: public  # ← разрешает анонимный доступ к метрикам
+    volumes:
+      - minio_data:/data
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  minio_data:
+
+networks:
+  data-eng-net:
+    driver: bridge

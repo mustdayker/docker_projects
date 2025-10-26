@@ -1,0 +1,27 @@
+# Airflow
+airflow/logs/
+airflow/plugins/
+airflow/dags/__pycache__/
+
+
+# Docker
+.env
+.dockerignore
+
+
+
+# Python
+__pycache__/
+
+
+# Jupyter
+.ipynb_checkpoints/
+jupyter/notebooks/.ipynb_checkpoints/
+
+
+
+
+
+# OS
+.DS_Store
+Thumbs.db
