@@ -24,7 +24,8 @@ RUN pip install --no-cache-dir \
     sqlalchemy \
     psycopg2-binary \
     beautifulsoup4 \
-    lxml
+    lxml \
+    tqdm
 
 # Создаём пользователя jovyan (как в официальных Jupyter-образах)
 RUN useradd -m -u 1000 -G sudo jovyan && \

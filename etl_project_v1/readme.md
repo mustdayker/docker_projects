@@ -237,14 +237,17 @@ print("✅ Успешно!")
 
 
 ### Создание бакета в MinIO:
+```
 Открой веб-консоль: http://localhost:9001
 Логин: `minioadmin` / `minioadmin`
 Создай бакеты: `learn-bucket`, `spark-logs`
+```
 
 ### Шаг 6: Мониторинг в Grafana
+```
 Открой Grafana: http://localhost:3000 (admin/admin)
 Добавь дашборды:
 Для MinIO: импортируй официальный дашборд ID 13505 (https://grafana.com/grafana/dashboards/13505?spm=a2ty_o01.29997173.0.0.4346c921Wv4MBW)
 Для Spark: можно использовать ID 12223 (https://grafana.com/grafana/dashboards/12223?spm=a2ty_o01.29997173.0.0.4346c921Wv4MBW) или создать свой
 Убедись, что Prometheus видит таргеты: http://localhost:9090/targets
-
+```
