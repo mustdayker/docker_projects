@@ -38,3 +38,17 @@ scrape_configs:
       - targets: ['minio:9000']
 
   # Spark History Server тоже можно мониторить, но он не даёт много метрик
+
+  # Spark Master metrics
+  - job_name: 'spark-master'
+    static_configs:
+      - targets: ['spark-master:8080']
+    metrics_path: /metrics/prometheus
+    scrape_interval: 15s
+
+  # Spark Workers metrics
+  - job_name: 'spark-workers'
+    static_configs:
+      - targets: ['spark-worker-1:8081', 'spark-worker-2:8081']
+    metrics_path: /metrics/prometheus
+    scrape_interval: 15s

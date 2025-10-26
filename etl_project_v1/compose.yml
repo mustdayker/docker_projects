@@ -327,10 +327,9 @@ services:
       - "8085:8080"   # Web UI
     environment:
       SPARK_LOCAL_IP: spark-master
-      # Включаем Prometheus-метрики
-#      SPARK_DAEMON_JAVA_OPTS: >
-#        -Dspark.master.ui.prometheus.enabled=true
-#        -Dspark.ui.prometheus.enabled=true
+      SPARK_CONF_DIR: /opt/spark/conf
+      SPARK_MASTER_HOST: spark-master # добавил
+      SPARK_PUBLIC_DNS: localhost # добавил
     volumes:
       - ./spark/conf:/opt/spark/conf
       - ./jupyter/work/datasets:/shared_data
@@ -347,8 +346,11 @@ services:
       SPARK_WORKER_CORES: 10
       SPARK_WORKER_MEMORY: 18g
       SPARK_WORKER_PORT: 7078
+      SPARK_WORKER_WEBUI_PORT: 8081 # добавил
+      SPARK_PUBLIC_DNS: localhost # добавил
     ports:
       - "8086:8081"   # Worker UI
+      - "4040:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
       - ./jupyter/work/datasets:/shared_data
@@ -367,8 +369,11 @@ services:
       SPARK_WORKER_CORES: 10
       SPARK_WORKER_MEMORY: 18g
       SPARK_WORKER_PORT: 7079
+      SPARK_WORKER_WEBUI_PORT: 8081 # добавил
+      SPARK_PUBLIC_DNS: localhost # добавил
     ports:
       - "8087:8081"
+      - "4041:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
       - ./jupyter/work/datasets:/shared_data
@@ -379,7 +384,9 @@ services:
     restart: unless-stopped
 
 
+
   # ____________________ SPARK HISTORY SERVER ____________________________
+
 
 
   # ____________________ MINIO ____________________________
@@ -404,6 +411,49 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+
+
+  # ____________________ JMX EXPORTER для Spark ____________________________
+#  jmx-exporter:
+#    image: bitnami/jmx-exporter:latest
+#    container_name: jmx-exporter
+#    command: >
+#      9090 /opt/bitnami/jmx-exporter/conf/config.yaml
+#    ports:
+#      - "9091:9090"
+#    volumes:
+#      - ./monitoring/jmx-exporter/spark-config.yaml:/opt/bitnami/jmx-exporter/conf/config.yaml
+#    networks:
+#      - data-eng-net
+#    restart: unless-stopped
+
+  # ____________________ SPARK METRICS CONFIG ____________________________
+  spark-metrics-setup:
+    image: alpine:latest
+    container_name: spark-metrics-setup
+    command: >
+      sh -c "
+        echo 'Creating Spark metrics config...' &&
+        mkdir -p /opt/spark/conf &&
+        cat > /opt/spark/conf/metrics.properties << 'EOF'
+        *.sink.prometheusServlet.class=org.apache.spark.metrics.sink.PrometheusServlet
+        *.sink.prometheusServlet.path=/metrics/prometheus
+        master.sink.prometheusServlet.path=/metrics/prometheus
+        worker.sink.prometheusServlet.path=/metrics/prometheus
+        executor.sink.prometheusServlet.path=/metrics/prometheus
+        driver.sink.prometheusServlet.path=/metrics/prometheus
+        applications.sink.prometheusServlet.path=/metrics/prometheus
+        
+        *.source.jvm.class=org.apache.spark.metrics.source.JvmSource
+        EOF
+        echo 'Config created successfully'"
+    volumes:
+      - ./spark/conf/metrics.properties:/opt/spark/conf/metrics.properties
+    networks:
+      - data-eng-net
+    profiles: ["setup"]
+
+
 
 
 
