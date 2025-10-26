@@ -1,0 +1,47 @@
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Jupyter Notebook temp files
+.ipynb_checkpoints/
+
+
+.idea/
+
+# Airflow
+airflow/logs/
+airflow/plugins/
+airflow/dags/__pycache__/
+
+
+# Docker
+.env
+.dockerignore
+
+
+# Python
+__pycache__/
+
+datasets/
