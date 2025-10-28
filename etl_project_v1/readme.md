@@ -7,15 +7,13 @@
 - **Grafana:** http://localhost:3000 (`admin` / `admin`)
 - **Prometheus:** http://localhost:9090
 - **MinIO:** http://localhost:9001 (`minioadmin` / `minioadmin`)
-- **SparkUI** http://localhost:8085
-- http://localhost:8086/
-- http://localhost:8087/
-
-- Master метрики: http://localhost:8085/metrics/prometheus/
-- Worker 1 метрики: http://localhost:8086/metrics/prometheus/
-- Worker 2 метрики: http://localhost:8087/metrics/prometheus/
-
-- cAdvisor: http://localhost:8081/
+- **SparkUI - master:** http://localhost:8085
+- **SparkUI - worker 1:** http://localhost:8086/
+- **SparkUI - worker 2:** http://localhost:8087/
+- **Spark Master метрики:** http://localhost:8085/metrics/prometheus/
+- **Spark Worker 1 метрики:** http://localhost:8086/metrics/prometheus/
+- **Spark Worker 2 метрики:** http://localhost:8087/metrics/prometheus/
+- **cAdvisor:** http://localhost:8081/
 
 
 

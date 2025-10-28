@@ -27,7 +27,7 @@ $RECYCLE.BIN/
 # Jupyter Notebook temp files
 .ipynb_checkpoints/
 .Trash-1000/
-
+spark-jars/
 .idea/
 
 # Airflow

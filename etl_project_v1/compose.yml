@@ -202,10 +202,12 @@ services:
       JUPYTER_TOKEN: "dataengineer"
       CHOWN_HOME: "yes"
       CHOWN_HOME_OPTS: "-R"
+      SPARK_CONF_DIR: /opt/spark/conf  # ← КРИТИЧЕСКИ ВАЖНО
     volumes:
       - ./jupyter/work:/home/jovyan/work
       - ./jupyter/work/datasets:/home/jovyan/work/datasets
       - ./jupyter/work/datasets:/shared_data
+      - ./spark/conf:/opt/spark/conf    # ← КРИТИЧЕСКИ ВАЖНО
     ports:
       - "8888:8888"
     networks:
