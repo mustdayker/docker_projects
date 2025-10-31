@@ -4,24 +4,5 @@ airflow/plugins/
 airflow/dags/__pycache__/
 
 
-# Docker
-.env
-.dockerignore
-
-
-
-# Python
-__pycache__/
-
-
 # Jupyter
-.ipynb_checkpoints/
-jupyter/notebooks/.ipynb_checkpoints/
 
-datasets/
-
-
-
-# OS
-.DS_Store
-Thumbs.db

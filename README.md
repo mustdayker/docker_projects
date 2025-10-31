@@ -36,4 +36,17 @@
 - Clickhouse
 - Streaming
 - Data Quality
-- 
+- GPU in data
+
+
+### Spark stack
+- Партиционирование по ключам JOIN
+- `broadcat join` маленьких таблиц 
+  > - `from pyspark.sql.functions import broadcast`
+- Кэш таблиц 
+  > - `from pyspark import StorageLevel`
+  > - `.cache() / .persist() / .unpersist()`)
+  
+
+
+
