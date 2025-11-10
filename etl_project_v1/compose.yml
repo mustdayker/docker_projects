@@ -44,7 +44,9 @@ services:
 
   # ____________________________ Airflow init ____________________________
   airflow-init:
-    image: apache/airflow:2.7.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     container_name: airflow-init
     command: >
       bash -c "
@@ -64,6 +66,9 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
     depends_on:
       - postgres-db
     networks:
@@ -71,7 +76,9 @@ services:
 
   # ___________________ AIRFLOW SCHEDULER ____________________________
   airflow-scheduler:
-    image: apache/airflow:2.7.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     container_name: airflow-scheduler
     command: >
       bash -c "
@@ -93,6 +100,9 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
     depends_on:
       - postgres-db
       - airflow-init
@@ -110,7 +120,9 @@ services:
 
   # ____________________________ AIRFLOW WEBSERVER ____________________________
   airflow-webserver:
-    image: apache/airflow:2.7.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     container_name: airflow-webserver
     command: >
       bash -c "
@@ -133,6 +145,9 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
     ports:
       - "8080:8080"
     depends_on:
@@ -208,6 +223,8 @@ services:
       - ./jupyter/work/datasets:/home/jovyan/work/datasets
       - ./jupyter/work/datasets:/shared_data
       - ./spark/conf:/opt/spark/conf    # ← КРИТИЧЕСКИ ВАЖНО
+      - ./spark/external-jars:/home/jovyan/spark/external-jars  # ← ДОБАВИТЬ
+      - ./spark/apps:/home/jovyan/spark/apps  # ← ДОБАВИТЬ
     ports:
       - "8888:8888"
     networks:
@@ -334,6 +351,8 @@ services:
       SPARK_PUBLIC_DNS: localhost # добавил
     volumes:
       - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
       - ./jupyter/work/datasets:/shared_data
     networks:
       - data-eng-net
@@ -355,6 +374,8 @@ services:
       - "4040:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
       - ./jupyter/work/datasets:/shared_data
     depends_on:
       - spark-master
@@ -378,6 +399,8 @@ services:
       - "4041:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
       - ./jupyter/work/datasets:/shared_data
     depends_on:
       - spark-master

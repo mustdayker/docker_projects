@@ -1,0 +1,7 @@
+# Jupyter-специфичные зависимости
+-r base.txt
+jupyterlab>=3.6.0
+matplotlib>=3.5.0
+seaborn>=0.12.0
+scikit-learn>=1.2.0
+plotly>=5.13.0

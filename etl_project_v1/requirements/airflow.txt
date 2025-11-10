@@ -1,0 +1,3 @@
+# Airflow-специфичные зависимости
+-r base.txt
+apache-airflow[postgres]==2.7.1

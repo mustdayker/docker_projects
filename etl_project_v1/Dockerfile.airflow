@@ -1,0 +1,19 @@
+# Базовый образ Airflow
+FROM apache/airflow:2.7.1
+
+# Переключаемся на root для установки системных зависимостей
+USER root
+
+# Устанавливаем системные зависимости (если нужны для сборки пакетов)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        && rm -rf /var/lib/apt/lists/*
+
+# Возвращаемся к пользователю airflow для установки Python пакетов
+USER airflow
+
+# Копируем ВСЮ папку requirements и устанавливаем зависимости
+COPY --chown=airflow:airflow requirements /tmp/requirements
+RUN pip install --no-cache-dir -r /tmp/requirements/airflow.txt
