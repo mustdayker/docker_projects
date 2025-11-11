@@ -1,5 +1,9 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+
 from datetime import datetime, timedelta
 from minio import Minio
 from minio.error import S3Error
@@ -166,14 +170,22 @@ def download_missing_files(**kwargs):
     }
 
 
+
+# -------------------- Настройка DAG --------------------
+# -------------------- Настройка DAG --------------------
+# -------------------- Настройка DAG --------------------
+# -------------------- Настройка DAG --------------------
 # -------------------- Настройка DAG --------------------
 
+
+
+
 default_args = {
-    'owner': 'airflow',
+    'owner': 'mustdayker',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,
+    'retries': 0,
     'retry_delay': timedelta(minutes=5),
 }
 
@@ -186,6 +198,12 @@ with DAG(
         catchup=False,  # Не запускать пропущенные даги
         tags=['nyc_taxi', 'data_pipeline'],
 ) as dag:
+
+    # -------------------  ТАСКИ ------------------------
+    # -------------------  ТАСКИ ------------------------
+    # -------------------  ТАСКИ ------------------------
+
+
     download_nyc_taxi_data = PythonOperator(
         task_id='download_nyc_taxi_data',
         python_callable=download_missing_files,
@@ -199,13 +217,32 @@ with DAG(
         provide_context=True,  # Передаем execution context для доступа к execution_date
     )
 
+    spark_drivers = [
+        "/opt/spark/external-jars/hadoop-aws-3.3.4.jar",
+        "/opt/spark/external-jars/aws-java-sdk-bundle-1.12.262.jar",
+        "/opt/spark/external-jars/wildfly-openssl-1.0.7.Final.jar",
+        "/opt/spark/external-jars/postgresql-42.6.0.jar",
+    ]
+
+
+    test_spark_job = SparkSubmitOperator(
+        task_id='test_spark_job',
+        application='/opt/spark/apps/simple_test.py',
+        conn_id='spark_cluster',  # ← используем наш connection
+        jars=','.join(spark_drivers),
+        name='airflow-distributed-test',
+        verbose=True,
+        retries=0
+    )
+
+
     # Здесь в будущем можно добавить следующие таски:
     # - data_cleaning_task
     # - data_aggregation_task
     # - load_to_postgres_task
     # - update_superset_dashboard_task
 
-    download_nyc_taxi_data
+    download_nyc_taxi_data >> test_spark_job
 
 # Документация DAG
 dag.doc_md = """

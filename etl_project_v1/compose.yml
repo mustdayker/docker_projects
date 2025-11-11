@@ -58,6 +58,7 @@ services:
         airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || echo 'User already exists' &&
         echo 'Airflow initialization completed!'"
     environment:
+      AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: 'false'  # ← ДОБАВЬ ЭТО
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -66,9 +67,10 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
-      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./jupyter/work/datasets:/shared_data
     depends_on:
       - postgres-db
     networks:
@@ -86,6 +88,7 @@ services:
         until nc -z postgres-db 5432; do sleep 2; done &&
         airflow scheduler"
     environment:
+      AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: 'false'  # ← ДОБАВЬ ЭТО
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -100,9 +103,10 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
-      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./jupyter/work/datasets:/shared_data
     depends_on:
       - postgres-db
       - airflow-init
@@ -130,6 +134,7 @@ services:
         until nc -z postgres-db 5432; do sleep 2; done &&
         airflow webserver"
     environment:
+      AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: 'false'  # ← ДОБАВЬ ЭТО
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-db/airflow
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -145,9 +150,10 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
-      - ./spark/apps:/opt/airflow/apps  # ← ДОБАВИТЬ (только apps)
+      - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./jupyter/work/datasets:/shared_data
     ports:
       - "8080:8080"
     depends_on:
@@ -222,9 +228,9 @@ services:
       - ./jupyter/work:/home/jovyan/work
       - ./jupyter/work/datasets:/home/jovyan/work/datasets
       - ./jupyter/work/datasets:/shared_data
-      - ./spark/conf:/opt/spark/conf    # ← КРИТИЧЕСКИ ВАЖНО
-      - ./spark/external-jars:/home/jovyan/spark/external-jars  # ← ДОБАВИТЬ
-      - ./spark/apps:/home/jovyan/spark/apps  # ← ДОБАВИТЬ
+      - ./spark/conf:/opt/spark/conf
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./spark/apps:/home/jovyan/work/spark/apps
     ports:
       - "8888:8888"
     networks:
@@ -351,8 +357,8 @@ services:
       SPARK_PUBLIC_DNS: localhost # добавил
     volumes:
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
-      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./spark/apps:/opt/spark/apps
       - ./jupyter/work/datasets:/shared_data
     networks:
       - data-eng-net
@@ -374,8 +380,8 @@ services:
       - "4040:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
-      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./spark/apps:/opt/spark/apps
       - ./jupyter/work/datasets:/shared_data
     depends_on:
       - spark-master
@@ -399,8 +405,8 @@ services:
       - "4041:4040"   # Executor metrics & logs
     volumes:
       - ./spark/conf:/opt/spark/conf
-      - ./spark/external-jars:/opt/spark/external-jars          # ← ДОБАВИТЬ
-      - ./spark/apps:/opt/spark/apps          # ← ДОБАВИТЬ
+      - ./spark/external-jars:/opt/spark/external-jars
+      - ./spark/apps:/opt/spark/apps
       - ./jupyter/work/datasets:/shared_data
     depends_on:
       - spark-master

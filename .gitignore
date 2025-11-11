@@ -37,7 +37,9 @@ derby.log
 # Docker
 .env
 .dockerignore
-
+*.tgz
+*.tar
+*.gz
 
 # Python
 __pycache__/

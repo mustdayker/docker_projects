@@ -1,72 +1,42 @@
-#!/usr/bin/env python3
-"""
-Простой тест Spark приложения - проверяет что Spark сессия работает
-"""
-
-import sys
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 
 def main():
-    print("=== Starting Simple Spark Test ===")
+    print("🚀 Starting test Spark application...")
 
-    # Список драйверов
-    drivers = [
-        "/opt/spark/jars/hadoop-aws-3.3.4.jar",
-        "/opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar",
-        "/opt/spark/jars/wildfly-openssl-1.0.7.Final.jar",
-        "/opt/spark/jars/postgresql-42.6.0.jar",
+    # Простая сессия без лишних конфигов
+    spark = SparkSession.builder \
+        .appName("airflow-test-app") \
+        .getOrCreate()
+
+    # Создаем тестовый датафрейм
+    schema = StructType([
+        StructField("id", IntegerType(), True),
+        StructField("name", StringType(), True),
+        StructField("value", IntegerType(), True)
+    ])
+
+    data = [
+        (1, "Alice", 100),
+        (2, "Bob", 200),
+        (3, "Charlie", 300),
+        (4, "David", 400),
+        (5, "Eve", 500)
     ]
 
-    print("Creating Spark session...")
+    df = spark.createDataFrame(data, schema=schema)
 
-    # Создание Spark сессии
-    spark = (SparkSession.builder
-             .appName("simple-spark-test")
-             .master("spark://spark-master:7077")
-             .config("spark.jars", ",".join(drivers))
-             .getOrCreate()
-             )
+    print("✅ Spark session created successfully!")
+    print("📊 Test DataFrame:")
+    df.show()
 
-    try:
-        print("Spark session created successfully!")
-        print(f"Spark version: {spark.version}")
-        print(f"Master: {spark.conf.get('spark.master')}")
+    # Простая агрегация для демонстрации
+    result = df.groupBy().sum("value").collect()
+    total_value = result[0][0]
+    print(f"💰 Total value: {total_value}")
 
-        # Простейшая операция - создаем маленький DataFrame
-        print("Creating test DataFrame...")
-        data = [("Alice", 25), ("Bob", 30), ("Charlie", 35)]
-        columns = ["name", "age"]
-
-        df = spark.createDataFrame(data, columns)
-
-        print("DataFrame schema:")
-        df.printSchema()
-
-        print("DataFrame content:")
-        df.show()
-
-        # Простая агрегация
-        print("Simple aggregation...")
-        result = df.agg(F.avg("age").alias("average_age"))
-
-        print("Aggregation result:")
-        result.show()
-
-        # Проверка количества записей
-        count = df.count()
-        print(f"Total records: {count}")
-
-        print("=== Spark Test Completed Successfully! ===")
-
-    except Exception as e:
-        print(f"ERROR in Spark job: {str(e)}")
-        raise e
-    finally:
-        print("Stopping Spark session...")
-        spark.stop()
-        print("Spark session stopped.")
+    print("✅ Spark application completed successfully!")
 
 
 if __name__ == "__main__":
