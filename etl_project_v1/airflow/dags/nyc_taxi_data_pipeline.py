@@ -212,6 +212,7 @@ with DAG(
             'prefix': 'nyc-taxi-data',
             'base_url': 'https://d37ci6vzurychx.cloudfront.net/trip-data',
             'filename_template': 'yellow_tripdata_{year}-{month:02d}.parquet',
+            # 'year': 2024,
             # Год будет автоматически подставляться через {{ data_interval_end.year }}
         },
         provide_context=True,  # Передаем execution context для доступа к execution_date
@@ -225,10 +226,10 @@ with DAG(
     ]
 
 
-    test_spark_job = SparkSubmitOperator(
-        task_id='test_spark_job',
-        application='/opt/spark/apps/simple_test.py',
-        conn_id='spark_cluster',  # ← используем наш connection
+    bronze_to_silver_norm = SparkSubmitOperator(
+        task_id='bronze_to_silver_norm',
+        application='/opt/spark/apps/nyc_taxi_bronze_to_silver_norm.py',
+        conn_id='spark_cluster',
         jars=','.join(spark_drivers),
         name='airflow-distributed-test',
         verbose=True,
@@ -236,13 +237,38 @@ with DAG(
     )
 
 
+    silver_norm_to_eda = SparkSubmitOperator(
+        task_id='silver_norm_to_eda',
+        application='/opt/spark/apps/nyc_taxi_silver_norm_to_eda.py',
+        conn_id='spark_cluster',
+        jars=','.join(spark_drivers),
+        name='airflow-distributed-test',
+        verbose=True,
+        retries=0
+    )
+
+    agg_write_to_postgres = SparkSubmitOperator(
+        task_id='agg_write_to_postgres',
+        application='/opt/spark/apps/nyc_taxi_agg_write_to_postgre.py',
+        conn_id='spark_cluster',
+        jars=','.join(spark_drivers),
+        name='airflow-distributed-test',
+        verbose=True,
+        retries=0
+    )
+
     # Здесь в будущем можно добавить следующие таски:
     # - data_cleaning_task
     # - data_aggregation_task
     # - load_to_postgres_task
     # - update_superset_dashboard_task
 
-    download_nyc_taxi_data >> test_spark_job
+    (
+            download_nyc_taxi_data >>
+            bronze_to_silver_norm >>
+            silver_norm_to_eda >>
+            agg_write_to_postgres
+     )
 
 # Документация DAG
 dag.doc_md = """

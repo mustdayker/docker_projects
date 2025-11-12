@@ -10,6 +10,16 @@ def main():
         .appName("airflow-test-app") \
         .getOrCreate()
 
+    # Устанавливаем уровень логгирования для Spark
+    spark.sparkContext.setLogLevel("WARN")  # или "ERROR"
+
+    # Устанавливаем уровень логгирования для Py4J (библиотека для связи Python-Java)
+    logger = spark.sparkContext._jvm.org.apache.log4j
+    logger.LogManager.getLogger("org").setLevel(logger.Level.WARN)
+    logger.LogManager.getLogger("akka").setLevel(logger.Level.WARN)
+    logger.LogManager.getLogger("io").setLevel(logger.Level.WARN)
+
+
     # Создаем тестовый датафрейм
     schema = StructType([
         StructField("id", IntegerType(), True),
