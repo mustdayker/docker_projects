@@ -67,6 +67,8 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/tasks:/opt/airflow/tasks
+      - ./airflow/module:/opt/airflow/module
       - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
       - ./spark/external-jars:/opt/spark/external-jars
@@ -103,6 +105,8 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/tasks:/opt/airflow/tasks
+      - ./airflow/module:/opt/airflow/module
       - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
       - ./spark/external-jars:/opt/spark/external-jars
@@ -150,6 +154,8 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/tasks:/opt/airflow/tasks
+      - ./airflow/module:/opt/airflow/module
       - ./spark/apps:/opt/spark/apps
       - ./spark/conf:/opt/spark/conf
       - ./spark/external-jars:/opt/spark/external-jars
