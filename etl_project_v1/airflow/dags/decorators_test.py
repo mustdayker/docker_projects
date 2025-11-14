@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
-from tasks.external_task import time_task, all_upper
 from airflow.operators.python import PythonOperator
 
+from tasks.external_task import time_task, all_upper
 
 default_args = {
     'owner': 'mustdayker',

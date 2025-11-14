@@ -1,4 +1,9 @@
 # Берём базу от Spark — там уже есть всё для S3A
+
+# Образ лежит локально
+# Чтобы скопирвоать его в докер надо  выполнить:
+# docker load -i images/spark_3.5.0.tar
+
 FROM apache/spark:3.5.0
 
 # Проверяем версию Python (для диагностики)
@@ -18,11 +23,16 @@ RUN pip install --no-cache-dir -r /tmp/requirements/jupyter.txt
 RUN useradd -m -u 1000 -G sudo jovyan && \
     chown -R jovyan:jovyan /home/jovyan
 
+# ДОБАВЛЯЕМ PYTHONPATH для корректных импортов
+ENV PYTHONPATH="/home/jovyan/work"
+
 USER jovyan
 WORKDIR /home/jovyan
 
 # Копируем конфиг Hadoop для MinIO
 COPY spark/conf/core-site.xml $SPARK_HOME/conf/
+
+
 
 # Запуск Jupyter
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=dataengineer"]

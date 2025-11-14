@@ -6,6 +6,9 @@ from minio import Minio
 from minio.error import S3Error
 import time
 
+import ast
+import argparse
+
 # Конфигурация MinIO
 MINIO_ENDPOINT = 'minio:9000'
 MINIO_ACCESS_KEY = 'minioadmin'
@@ -189,6 +192,37 @@ def process_incremental_nyc_taxi_files(spark, input_bucket, input_prefix, output
 def main():
     """Основная функция Spark приложения"""
 
+    # Создаем парсер аргументов
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input-data', type=str, required=True)
+    parser.add_argument('--execution-date', type=str, required=True)
+
+    # Парсим аргументы
+    args = parser.parse_args()
+
+    # Теперь используем полученные значения
+    input_data = args.input_data
+    execution_date = args.execution_date
+
+    print("=" * 60)
+    print(f"INPUT DATA FROM XCOM: {input_data}")
+    print(f"EXECUTION DATE: {execution_date}")
+    print("=" * 60)
+
+    print("-------- 📊 Статус задачи download_nyc_taxi_data ---------")
+
+    # Парсим Python dict строку
+    try:
+        input_dict = ast.literal_eval(input_data)
+    except (SyntaxError, ValueError) as e:
+        print(f"❌ Ошибка парсинга: {e}")
+        print(f"Полученная строка: {repr(input_data)}")
+        raise
+
+    for i in input_dict.items():
+        print(i)
+
+    print("----------------------------------------------------------")
     print("\n\n")
     start_time = time.time()
 

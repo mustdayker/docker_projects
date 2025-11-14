@@ -237,6 +237,7 @@ services:
       - ./spark/conf:/opt/spark/conf
       - ./spark/external-jars:/opt/spark/external-jars
       - ./spark/apps:/home/jovyan/work/spark/apps
+      - ./airflow/module:/home/jovyan/work/module
     ports:
       - "8888:8888"
     networks:
