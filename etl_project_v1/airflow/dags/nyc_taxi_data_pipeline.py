@@ -8,7 +8,9 @@ from datetime import datetime, timedelta
 from minio import Minio
 from minio.error import S3Error
 
-
+# Таски для PythonOperator
+# Лежит в \airflow\tasks\nyc_taxi\nyc_download.py
+# 1 таска - 1 функция
 from tasks.nyc_taxi.nyc_download import (
     get_available_remote_files,
     get_local_minio_files,
@@ -138,13 +140,13 @@ dag.doc_md = """
 Этот DAG загружает данные NYC Taxi из публичного источника в MinIO.
 
 ### Задачи:
-1. **download_nyc_taxi_data** - Загружает отсутствующие файлы данных такси NYC за текущий год
+1. **`remote_files_task`** - Получает список доступных файлов за год запуска DAG
+2. **`local_files_task`** - Получает список доступных файлов в хранилище
+3. **`download_nyc_taxi_data`** - Скачивает недостающие файлы в MinIO://bronze
+4. **`bronze_to_silver_norm`** - Нормализует файлы из слоя bronze и кладет в слой silver
+5. **`silver_norm_to_eda`** - Берет нормализованные данные из silver, чистит и обогощает
+6. **`agg_write_to_postgres`** - Создает агрегаты, записывает результаты в БД Postgres
 
-### Параметры:
-- Автоматически определяет год из execution_date
-- Проверяет какие файлы уже есть в MinIO
-- Скачивает только отсутствующие файлы
-- Сохраняет в бакет `bronze` с префиксом `nyc-taxi-data`
 
 ### Расписание:
 - Запускается ежемесячно (@monthly)

@@ -2,7 +2,10 @@ import psycopg2
 import pandas as pd
 from sqlalchemy import create_engine, text
 
+# ------------------------------------------------------------------------------
 
+# Принимает запрос вида SELECT FROM
+# Получает результат запроса в Pandas DataFrame
 def get_df_from_postgres(
         query="""SELECT 1 AS one""",
         host="postgres-db",
@@ -18,7 +21,10 @@ def get_df_from_postgres(
         df = pd.read_sql_query(text(query), connection)
     return df
 
+# ------------------------------------------------------------------------------
 
+# Принимает первым параметром DLL скрипт
+# Выполняет его в базе данных
 def ddl_on_postgres(
         query="""SELECT 1 AS one""",
         host="postgres-db",

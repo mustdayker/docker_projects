@@ -167,8 +167,66 @@ def eda_nyc_taxi_data(spark, input_path, output_path):
     print(f"Размер после очистки: {df_clean.count()}")
     print(f"Удалено {df.count() - df_clean.count()} строк ({(1 - df_clean.count() / df.count()) * 100:.2f}%)")
 
+
+
+    # ОБОГАЩАЕМ СПРАВОЧНЫМИ ДАННЫМИ
+
+    list_vendor = (spark.read
+                   .format("jdbc")
+                   .option("url", "jdbc:postgresql://postgres-db:5432/learn_base")
+                   .option("driver", "org.postgresql.Driver")
+                   .option("user", "airflow")
+                   .option("password", "airflow")
+                   .option("dbtable", "nyc_taxi.list_vendor")
+                   .load())
+
+    list_ratecode = (spark.read
+                     .format("jdbc")
+                     .option("url", "jdbc:postgresql://postgres-db:5432/learn_base")
+                     .option("driver", "org.postgresql.Driver")
+                     .option("user", "airflow")
+                     .option("password", "airflow")
+                     .option("dbtable", "nyc_taxi.list_ratecode")
+                     .load())
+
+    list_payment = (spark.read
+                    .format("jdbc")
+                    .option("url", "jdbc:postgresql://postgres-db:5432/learn_base")
+                    .option("driver", "org.postgresql.Driver")
+                    .option("user", "airflow")
+                    .option("password", "airflow")
+                    .option("dbtable", "nyc_taxi.list_payment")
+                    .load())
+
+    list_taxi_zone = (spark.read
+                      .format("jdbc")
+                      .option("url", "jdbc:postgresql://postgres-db:5432/learn_base")
+                      .option("driver", "org.postgresql.Driver")
+                      .option("user", "airflow")
+                      .option("password", "airflow")
+                      .option("dbtable", "nyc_taxi.list_taxi_zone")
+                      .load())
+
+    df_joined = (df_clean
+        .join(list_vendor, "vendorid", "left")
+        .join(list_ratecode, "ratecodeid", "left")
+        .join(list_payment, "payment_type", "left")
+        .join(list_taxi_zone.alias("pul_zones"), df_clean.pulocationid == F.col("pul_zones.locationid"), "left")
+        .join(list_taxi_zone.alias("dol_zones"), df_clean.dolocationid == F.col("dol_zones.locationid"), "left")
+        .select(
+                df_clean["*"],
+                list_vendor.vendor_name,
+                list_ratecode.ratecode_name,
+                list_payment.payment_name,
+                F.col("pul_zones.borough").alias("pickup_borough"),
+                F.col("dol_zones.borough").alias("dropoff_borough"),
+               )
+    )
+
+    print("ДАННЫЕ ОБОГАЩЕНЫ СПРАВОЧНИКАМИ")
+
     # 5. Сохраняем с оптимальными настройками
-    (df_clean
+    (df_joined
      .coalesce(1)
      .write
      .mode("overwrite")

@@ -209,6 +209,7 @@ def main():
     print(f"EXECUTION DATE: {execution_date}")
     print("=" * 60)
 
+
     print("-------- 📊 Статус задачи download_nyc_taxi_data ---------")
 
     # Парсим Python dict строку
