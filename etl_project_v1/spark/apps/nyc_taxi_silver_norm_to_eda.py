@@ -219,7 +219,9 @@ def eda_nyc_taxi_data(spark, input_path, output_path):
                 list_ratecode.ratecode_name,
                 list_payment.payment_name,
                 F.col("pul_zones.borough").alias("pickup_borough"),
+                F.col("pul_zones.zone").alias("pickup_zone"),
                 F.col("dol_zones.borough").alias("dropoff_borough"),
+                F.col("dol_zones.zone").alias("dropoff_zone"),
                )
     )
 
@@ -227,6 +229,48 @@ def eda_nyc_taxi_data(spark, input_path, output_path):
 
     # 5. Сохраняем с оптимальными настройками
     (df_joined
+    .select([
+        'vendorid',
+        'vendor_name',
+        'tpep_pickup_datetime',
+        'tpep_dropoff_datetime',
+        'passenger_count',
+        'trip_distance',
+        'ratecodeid',
+        'ratecode_name',
+        'pulocationid',
+        'pickup_borough',
+        'pickup_zone',
+        'dolocationid',
+        'dropoff_borough',
+        'dropoff_zone',
+        'payment_type',
+        'payment_name',
+        'fare_amount',
+        'extra',
+        'mta_tax',
+        'tip_amount',
+        'tolls_amount',
+        'improvement_surcharge',
+        'total_amount',
+        'congestion_surcharge',
+        'airport_fee',
+        # 'cbd_congestion_fee',
+        'trip_duration_minutes',
+        'date_month',
+        'year',
+        'month',
+        'day',
+        'day_of_week',
+        'hour',
+        'is_weekend',
+        'time_of_day',
+        'is_rush_hour',
+        'avg_speed_kmh',
+        'tip_ratio',
+        'has_tip',
+        'revenue_per_minute',
+    ])
      .coalesce(1)
      .write
      .mode("overwrite")
