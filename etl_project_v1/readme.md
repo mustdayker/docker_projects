@@ -162,3 +162,48 @@ docker volume ls -f "dangling=true"
 - Количество собираемых метрик
 - Производительность сбора
 
+
+## Локальное использование образов
+
+После первой сборки проекта можно сохранить образы локально
+и далее переносить их на другой ПК, чтобы не качать каждый раз заново.
+
+#### Сохранить скачанный образ из Docker
+
+```bash
+docker save -o images/apache-airflow-2.7.1.tar apache/airflow:2.7.1
+docker save -o images/etl_project_v1-airflow-init.tar etl_project_v1-airflow-init:latest 
+docker save -o images/etl_project_v1-airflow-scheduler.tar etl_project_v1-airflow-scheduler:latest
+docker save -o images/etl_project_v1-airflow-webserver.tar etl_project_v1-airflow-webserver:latest 
+docker save -o images/etl_project_v1-jupyter.tar etl_project_v1-jupyter:latest
+docker save -o images/postgres-15-alpine.tar postgres:15-alpine
+docker save -o images/spark-3.5.0.tar apache/spark:3.5.0
+docker save -o images/superset-latest.tar amancevice/superset:latest
+docker save -o images/minio-latest.tar minio/minio:latest
+docker save -o images/prometheus-latest.tar prom/prometheus:latest
+docker save -o images/grafana-latest.tar grafana/grafana:latest
+docker save -o images/node-exporter-latest.tar prom/node-exporter:latest
+docker save -o images/statsd-exporter-latest.tar prom/statsd-exporter:latest
+docker save -o images/cadvisor-latest.tar gcr.io/cadvisor/cadvisor:latest
+docker save -o images/postgres-exporter-latest.tar prometheuscommunity/postgres-exporter:latest
+```
+
+#### Загрузить локальный образ в Docker
+
+```bash
+docker load -i apache-airflow-2.7.1.tar
+docker load -i etl_project_v1-airflow-init.tar
+docker load -i etl_project_v1-airflow-scheduler.tar
+docker load -i etl_project_v1-airflow-webserver.tar
+docker load -i etl_project_v1-jupyter.tar
+docker load -i postgres-15-alpine.tar
+docker load -i spark-3.5.0.tar
+docker load -i superset-latest.tar
+docker load -i minio-latest.tar
+docker load -i prometheus-latest.tar
+docker load -i grafana-latest.tar
+docker load -i node-exporter-latest.tar
+docker load -i statsd-exporter-latest.tar
+docker load -i cadvisor-latest.tar
+docker load -i postgres-exporter-latest.tar
+```
