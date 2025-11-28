@@ -207,3 +207,5 @@ docker load -i statsd-exporter-latest.tar
 docker load -i cadvisor-latest.tar
 docker load -i postgres-exporter-latest.tar
 ```
+
+После этого при сборке проекта Docker не будет тащить образ из интернета
