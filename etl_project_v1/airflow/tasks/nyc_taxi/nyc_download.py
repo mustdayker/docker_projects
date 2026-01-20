@@ -13,20 +13,62 @@ def get_available_remote_files(base_url, filename_template, year):
 
     print("🔍 Проверка доступных файлов на сайте...")
 
+
+    # СТАРАЯ ВЕРСИЯ
+    # for month in tqdm(range(1, 13), desc="Проверка месяца"):
+    #     filename = filename_template.format(year=year, month=month)
+    #     url = f"{base_url}/{filename}"
+    #
+    #     try:
+    #         response = requests.head(url, timeout=10)
+    #         if response.status_code == 200:
+    #             available_files.append(filename)
+    #             print(f"  ✓ {filename} - доступен")
+    #         else:
+    #             print(f"  ✗ {filename} - недоступен (код: {response.status_code})")
+    #
+    #     except requests.exceptions.RequestException as e:
+    #         print(f"  ✗ {filename} - ошибка: {e}")
+
+    # Имитируем браузер
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    }
+
     for month in tqdm(range(1, 13), desc="Проверка месяца"):
         filename = filename_template.format(year=year, month=month)
         url = f"{base_url}/{filename}"
 
         try:
-            response = requests.head(url, timeout=10)
+            # Пробуем с разными заголовками
+            response = requests.get(url, headers=headers, timeout=10, stream=True)
+
+            # Проверяем статус код
             if response.status_code == 200:
-                available_files.append(filename)
-                print(f"  ✓ {filename} - доступен")
+                # Также проверяем содержание ответа - если файл существует,
+                # должны получить нормальные заголовки для файла
+                content_type = response.headers.get('Content-Type', '')
+                content_length = response.headers.get('Content-Length', '0')
+
+                # Парагветные файлы обычно имеют content-type 'application/octet-stream' или подобный
+                if int(content_length) > 1000:  # Проверяем что файл не пустой
+                    available_files.append(filename)
+                    print(f"  ✓ {filename} - доступен ({content_length} bytes)")
+                else:
+                    print(f"  ⚠ {filename} - маленький размер ({content_length} bytes)")
+
+                response.close()
             else:
-                print(f"  ✗ {filename} - недоступен (код: {response.status_code})")
+                print(f"  ✗ {filename} - код: {response.status_code}")
 
         except requests.exceptions.RequestException as e:
             print(f"  ✗ {filename} - ошибка: {e}")
+
 
     return available_files
 
@@ -126,12 +168,25 @@ def download_missing_files(bucket_name = 'bronze',
     results = []
     downloaded_files = []
 
+
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    }
+
+
     # Скачиваем только отсутствующие файлы
     for filename in tqdm(missing_files, desc="Загрузка недостающих"):
         url = f"{base_url}/{filename}"
 
         try:
-            response = requests.get(url, stream=True)
+            # response = requests.get(url, stream=True)
+            response = requests.get(url, headers=headers, stream=True)
             response.raise_for_status()
 
             # Создаем временный файл

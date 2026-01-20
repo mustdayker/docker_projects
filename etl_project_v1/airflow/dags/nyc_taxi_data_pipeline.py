@@ -56,7 +56,8 @@ with DAG(
         python_callable=lambda **context: get_available_remote_files(
             base_url=base_url,
             filename_template=filename_template,
-            year=context['execution_date'].year,
+            # year=context['execution_date'].year,
+            year=2025,
         )
     )
 
