@@ -1,0 +1,4 @@
+# Airflow-специфичные зависимости
+-r base.txt
+apache-airflow[postgres]==2.7.1
+apache-airflow-providers-apache-spark==4.1.0

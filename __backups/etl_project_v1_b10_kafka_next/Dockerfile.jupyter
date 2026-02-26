@@ -1,0 +1,39 @@
+# Чтобы не качать каждый раз образ из Dockerhub
+# Можно скопировать его в докер:
+# docker load -i images/spark_3.5.0.tar
+
+FROM apache/spark:3.5.0
+
+# После того как образ скачается, можно сохранить его локально
+# docker save -o ./images/spark-3.5.0.tar apache/spark:3.5.0
+
+# Проверяем версию Python (для диагностики)
+RUN python3 --version && pip3 --version
+
+# Устанавливаем JupyterLab и Python-пакеты
+USER root
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Копируем ВСЮ папку requirements и устанавливаем зависимости
+COPY requirements /tmp/requirements
+RUN pip install --no-cache-dir -r /tmp/requirements/jupyter.txt
+
+# Создаём пользователя jovyan (как в официальных Jupyter-образах)
+RUN useradd -m -u 1000 -G sudo jovyan && \
+    chown -R jovyan:jovyan /home/jovyan
+
+# ДОБАВЛЯЕМ PYTHONPATH для корректных импортов
+ENV PYTHONPATH="/home/jovyan/work"
+
+USER jovyan
+WORKDIR /home/jovyan
+
+# Копируем конфиг Hadoop для MinIO
+COPY spark/conf/core-site.xml $SPARK_HOME/conf/
+
+
+
+# Запуск Jupyter
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=dataengineer"]

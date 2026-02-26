@@ -1,0 +1,10 @@
+# Airflow
+airflow/logs/
+airflow/plugins/
+airflow/dags/__pycache__/
+
+
+# Jupyter
+
+spark/jars/
+spark/external-jars/
