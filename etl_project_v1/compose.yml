@@ -492,6 +492,95 @@ services:
     profiles: ["setup"]
 
 
+  # ____________________ KAFKA (без ZooKeeper, KRaft mode) ____________________
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"  # Основной порт для клиентов
+      - "9093:9093"  # Внутренний порт для контроллера
+    environment:
+      # Настройки кластера KRaft (без ZooKeeper)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      # Автоматическое создание топиков
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Для учебных целей - один брокер
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ____________________ KAFKA UI ____________________
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8082:8080"  # Веб-интерфейс (8080 внутри контейнера, 8082 на хосте)
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      # Для отладки - показывать все топики
+      KAFKA_CLUSTERS_0_METRICS_PORT: 9092
+      # Включаем возможность создания топиков через UI
+      ALLOW_CREATE_TOPICS: "true"
+      # Указываем, что кластер без ZooKeeper (KRaft)
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: kafka-connect
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka:8083
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  # ____________________ ГЕНЕРАТОР ДАННЫХ ДЛЯ KAFKA (выключен по умолчанию) ____________________
+  kafka-producer:
+    build:
+      context: ./kafka/producer
+      dockerfile: Dockerfile
+    container_name: kafka-producer
+    # Не запускается автоматически при docker-compose up
+    profiles: ["manual"]
+    # Можно переопределить команду при запуске
+    command: python producer.py
+    depends_on:
+      - kafka
+      - kafka-ui
+    networks:
+      - data-eng-net
+    restart: "no"  # Не перезапускать автоматически
+    # volumes не нужны, так как код уже внутри образа
+
+
+
+
+
+
 
 
 
@@ -500,6 +589,7 @@ volumes:
   prometheus_data:
   grafana_data:
   minio_data:
+  kafka_data:
 
 networks:
   data-eng-net:
