@@ -17,6 +17,7 @@
 | **SparkUI - master**       | http://localhost:8085 |
 | **SparkUI - worker 1**     | http://localhost:8086/ |
 | **SparkUI - worker 2**     | http://localhost:8087/ |
+| **KafkaUI**                | http://localhost:8082/ |
 | **Spark Master метрики**   | http://localhost:8085/metrics/prometheus/ |
 | **Spark Worker 1 метрики** | http://localhost:8086/metrics/prometheus/ |
 | **Spark Worker 2 метрики** | http://localhost:8087/metrics/prometheus/ |
@@ -32,6 +33,25 @@
 | **Пользователь** | `airflow` |
 | **Пароль**       | `airflow` |
 
+
+## Kafka
+
+Чтобы запустить Producer надо активировать контейнер `kafka-producer`. По умолчанию он не стартует
+
+```bash 
+# для запуска
+docker-compose --profile manual up -d kafka-producer
+
+# Смотрим логи генератора
+docker-compose logs -f kafka-producer
+
+# Останавливаем генератор
+docker-compose --profile manual stop kafka-producer
+
+# Или полностью удаляем контейнер
+docker-compose --profile manual down kafka-producer
+
+```
 
 ## Папки
 

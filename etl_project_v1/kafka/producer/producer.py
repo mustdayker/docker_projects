@@ -32,9 +32,9 @@ def generate_event():
         'id': random.randint(1, 1000000),  # Случайный ID
         'date': date.today().isoformat(),  # Текущая дата
         'event_date': datetime.now().isoformat(),  # Текущее время с секундами
-        'event': random.randint(1, 5),  # Случайное событие 1-5
+        'event_id': random.randint(1, 5),  # Случайное событие 1-5
         'username': fake.user_name(),  # Случайный username
-        'group': random.randint(1, 5),  # Случайная группа 1-5
+        'group_id': random.randint(1, 5),  # Случайная группа 1-5
         'value': round(random.uniform(0, 10000), 2)  # Случайное число 0-10000 с 2 знаками
     }
 
