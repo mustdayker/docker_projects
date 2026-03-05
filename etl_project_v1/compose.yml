@@ -578,7 +578,131 @@ services:
 
 
 
+  # ____________________ CLICKHOUSE (последняя стабильная) ____________________
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3.3.102-alpine  # Стабильная версия
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+      - "9009:9009"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    # Убираем healthcheck временно для диагностики
+    # healthcheck:
+    #   test: ["CMD-SHELL", "clickhouse-client --query='SELECT 1'"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3
 
+
+
+
+  # ____________________ CLICKHOUSE WEB INTERFACE (Tabix) ____________________
+#  tabix:
+#    image: spoonest/clickhouse-tabix-web-client
+#    container_name: tabix
+#    ports:
+#      - "8089:80"  # Веб-интерфейс для ClickHouse
+#    environment:
+#      TABIX_SERVERS: "clickhouse:8123"
+#    networks:
+#      - data-eng-net
+#    restart: unless-stopped
+#    depends_on:
+#      - clickhouse
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+
+  # ____________________ MONGODB (последняя стабильная) ____________________
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongouser
+      MONGO_INITDB_ROOT_PASSWORD: mongopass
+      MONGO_INITDB_DATABASE: admin
+    ports:
+      - "27018:27017"  # Сместил на 27018, чтобы не конфликтовать с возможным локальным MongoDB
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ MONGO EXPRESS (Web UI для MongoDB) ____________________
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: mongouser
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongopass
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    ports:
+      - "8083:8081"  # Веб-интерфейс (8081 внутри, 8083 снаружи)
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ REDIS (in-memory, с аутентификацией) ____________________
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --requirepass redispass --appendonly no
+    ports:
+      - "6380:6379"  # Сместил на 6380, чтобы не конфликтовать с локальным Redis
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ____________________ REDIS COMMANDER (Web UI для Redis) ____________________
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:redispass
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin
+    ports:
+      - "8084:8081"  # Веб-интерфейс
+    networks:
+      - data-eng-net
+    restart: unless-stopped
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 
 
@@ -590,6 +714,11 @@ volumes:
   grafana_data:
   minio_data:
   kafka_data:
+  # Новые volumes
+  clickhouse_data:
+  clickhouse_logs:
+  mongodb_data:
+  mongodb_config:
 
 networks:
   data-eng-net:
