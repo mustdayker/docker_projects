@@ -39,6 +39,7 @@
 - `Spark ML`
 - `Kubernetes`
 - `GPU in data`
+- `Data Architect`, `Platform Engineer`
 
 ## Где брать датасеты
 
