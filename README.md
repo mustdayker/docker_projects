@@ -1,12 +1,21 @@
 ## Дата-стенд `etl_project_v1`
 
+> - **Внимание!** Весь стенд уверенно кушает **30GB RAM** (без Spark сессий)
+> - **Spark Worker** (2 шт.) при запуске кушают по 8GB и 5 ядер на каждый, (1 сессия 16GB и 10 ядер) омном
+
 ### 🗄️ Хранилище данных:
 - `PostgreSQL` - основная БД для Airflow и Superset
 - `MinIO` - объектное хранилище (аналог S3)
+- `Clickhouse` - колоночная аналитическая БД
+- `MongoDB` - документо-ориентированная БД
+- `Redis` - in-memory кэш
 
-### ⚙️ Оркестрация данных:
-- `Airflow` - платформа для оркестрации ETL/ELT процессов
+### ⚙️ Управление данными:
+- `Airflow` - оркестрация ETL/ELT процессов
 - `Spark` - распределенная обработка данных (мастер + 2 воркера)
+- `Kafka` - брокер сообщений
+- `Iceberg` - DataLake > Lakehouse
+- `Trino` - Распределенный движок SQL запросов
 
 ### 📊 Аналитика и визуализация:
 - `Jupyter` - интерактивная разработка ноутбуков
@@ -19,9 +28,17 @@
 - `cAdvisor` - мониторинг контейнеров
 - `StatsD Exporter` - преобразование метрик Airflow для Prometheus
 
-## Пет проекты
-
-- [`pet_01_flights.md`](pet_01_flights.md) - ETL-пайплайн анализа авиаперелётов в США
+## To Do List
+- `Iceberg`
+- `Trino`
+- `dbt`
+- `Векторные БД (Qdrant)`
+- `FastAPI`
+- `Data Quality`
+- `Spark History Server`
+- `Spark ML`
+- `Kubernetes`
+- `GPU in data`
 
 ## Где брать датасеты
 
@@ -30,13 +47,6 @@
 - [`https://catalog.data.gov/dataset`](https://catalog.data.gov/dataset/)
 - [`https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page`](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
 
-## To Do List
-- Spark History Server
-- Kubernetes
-- Clickhouse
-- Streaming
-- Data Quality
-- GPU in data
 
 
 ### Spark stack

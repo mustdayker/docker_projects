@@ -1,27 +1,33 @@
 
 ## Ссылки на сервисы
 
-| Сервис         | Ссылка               | Учетные данные              |
-|----------------|----------------------|-----------------------------|
-| **Jupyter**    | http://localhost:8888 | Токен: `dataengineer`       |
-| **Airflow**    | http://localhost:8080 | Логин: `admin` Пароль: `admin` |
-| **Superset**   | http://localhost:8088 | Логин: `admin` Пароль: `admin` |
-| **MinIO**      | http://localhost:9001 | Логин: `minioadmin` Пароль: `minioadmin` |
-| **Grafana**    | http://localhost:3000 | Логин: `admin` Пароль: `admin` |
-| **Prometheus** | http://localhost:9090 | -                           |
+| Сервис         | Ссылка                | Учетные данные                                                               |
+|----------------|-----------------------|------------------------------------------------------------------------------|
+| **Jupyter**    | http://localhost:8888 | Токен: `dataengineer`                                                        |
+| **Airflow**    | http://localhost:8080 | Логин: `admin` Пароль: `admin`                                               |
+| **Superset**   | http://localhost:8088 | Логин: `admin` Пароль: `admin`                                               |
+| **MinIO**      | http://localhost:9001 | Логин: `minioadmin` Пароль: `minioadmin` Server: ``                          |
+| **Grafana**    | http://localhost:3000 | Логин: `admin` Пароль: `admin`                                               |
+| **Prometheus** | http://localhost:9090 | -                                                                            |
+| **Clickhouse** | http://localhost:8123 | Логин: `default` Пароль: `пусто` Host: `clickhouse` Порт: `8123` Database `default` |
+| **MongoDB**    |                       | Логин: `mongouser` Пароль: `mongopass` Host: `mongodb` Порт: `27018`         |
+| **Redis**      |                       | Логин: `` Пароль: `redispass` Host: `redis` Порт: `6379`                     |
 
 ## Мониторинг
 
-| Сервис                     | Ссылка |
-|----------------------------|--------|
-| **SparkUI - master**       | http://localhost:8085 |
-| **SparkUI - worker 1**     | http://localhost:8086/ |
-| **SparkUI - worker 2**     | http://localhost:8087/ |
-| **KafkaUI**                | http://localhost:8082/ |
-| **Spark Master метрики**   | http://localhost:8085/metrics/prometheus/ |
-| **Spark Worker 1 метрики** | http://localhost:8086/metrics/prometheus/ |
-| **Spark Worker 2 метрики** | http://localhost:8087/metrics/prometheus/ |
-| **cAdvisor**               | http://localhost:8081/ |
+| Сервис                     | Ссылка                                     | Параметры |
+|----------------------------|--------------------------------------------|-----------|
+| **SparkUI - master**       | http://localhost:8085                      |
+| **SparkUI - worker 1**     | http://localhost:8086/                     |
+| **SparkUI - worker 2**     | http://localhost:8087/                     |
+| **KafkaUI**                | http://localhost:8082/                     |
+| **Spark Master метрики**   | http://localhost:8085/metrics/prometheus/  |
+| **Spark Worker 1 метрики** | http://localhost:8086/metrics/prometheus/  |
+| **Spark Worker 2 метрики** | http://localhost:8087/metrics/prometheus/  |
+| **cAdvisor**               | http://localhost:8081/                     |
+| **Mongo Express**          | http://localhost:8083/                     | Логин/пароль: `admin` / `admin`
+| **Redis Commander**        | http://localhost:8084/                     | Логин/пароль: `admin` / `admin`
+
 
 ## PostgreSQL
 
@@ -32,6 +38,74 @@
 | **Базы**         | `airflow` (для Airflow) и `learn_base` (для данных) |
 | **Пользователь** | `airflow` |
 | **Пароль**       | `airflow` |
+
+
+## Spark
+
+- Зависимости лежат тут: `./spark/external-jars`
+- При запуске контейнера локальная папка монтируется в контейнер: `/opt/spark/external-jars/`
+
+Подгружаются в сессию следующей конструкцией:
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== MINIO / S3 ====================
+    # Hadoop AWS integration - provides s3a:// filesystem support
+        "/opt/spark/external-jars/hadoop-aws-3.3.4.jar",
+    # AWS Java SDK - low-level S3 API implementation
+        "/opt/spark/external-jars/aws-java-sdk-bundle-1.12.262.jar",
+    # WildFly OpenSSL - for SSL/TLS connections (optional)
+        "/opt/spark/external-jars/wildfly-openssl-1.0.7.Final.jar",
+
+    
+    # ==================== POSTGRESQL ====================
+    # PostgreSQL JDBC Driver
+        "/opt/spark/external-jars/postgresql-42.6.0.jar",
+
+    
+    # ==================== KAFKA ====================
+    # Spark SQL Kafka Connector - read/write from Kafka
+        "/opt/spark/external-jars/spark-sql-kafka-0-10_2.12-3.5.0.jar",
+    # Kafka Clients - core Kafka protocol
+        "/opt/spark/external-jars/kafka-clients-3.2.0.jar",
+    # Spark Token Provider - for secure Kafka
+        "/opt/spark/external-jars/spark-token-provider-kafka-0-10_2.12-3.5.0.jar",
+    # Commons Pool2 - connection pooling for Kafka
+        "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
+
+    
+    # ==================== CLICKHOUSE ====================
+    # ClickHouse JDBC Driver
+        "/opt/spark/external-jars/clickhouse-jdbc-0.6.5-all.jar",
+
+    
+    # ==================== MONGODB ====================
+    # MongoDB Spark Connector
+        "/opt/spark/external-jars/mongo-spark-connector_2.12-10.4.0.jar",
+    # MongoDB Java Driver
+        "/opt/spark/external-jars/mongodb-driver-sync-5.3.0.jar",
+
+    
+    # ==================== REDIS ====================
+    # Spark Redis Connector
+        "/opt/spark/external-jars/spark-redis_2.12-3.1.0.jar",
+    # Jedis - Redis Java client
+        "/opt/spark/external-jars/jedis-5.2.0.jar"
+]
+
+spark = (SparkSession.builder
+         .appName("jupyter-spark")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+         .getOrCreate()
+        )
+```
+
+Описание зависимостей:
+
+
 
 
 ## Kafka
