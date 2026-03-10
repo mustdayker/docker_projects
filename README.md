@@ -14,7 +14,7 @@
 - `Airflow` - оркестрация ETL/ELT процессов
 - `Spark` - распределенная обработка данных (мастер + 2 воркера)
 - `Kafka` - брокер сообщений
-- `Iceberg` - DataLake > Lakehouse
+- `Iceberg` - DataLake > LakeHouse
 - `Trino` - Распределенный движок SQL запросов
 
 ### 📊 Аналитика и визуализация:
@@ -33,7 +33,7 @@
 - `Trino`
 - `dbt`
 - `Векторные БД (Qdrant)`
-- `FastAPI`
+- `FastAPI` (`REST API`)
 - `Data Quality`
 - `Spark History Server`
 - `Spark ML`
