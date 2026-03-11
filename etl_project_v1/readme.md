@@ -1,34 +1,34 @@
 
-## Ссылки на сервисы
+## Описание сервисов
 
-| Сервис                     | Ссылка                                    | Учетные данные                                                                                                       |
-|----------------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| **Jupyter**                | http://localhost:8888                     | Токен: `dataengineer`                                                                                                |
-| **Airflow**                | http://localhost:8080                     | Логин: `admin` Пароль: `admin`                                                                                       |
-| **Superset**               | http://localhost:8088                     | Логин: `admin` Пароль: `admin`                                                                                       |
-| **Grafana**                | http://localhost:3000                     | Логин: `admin` Пароль: `admin`                                                                                       |
-| **Prometheus**             | http://localhost:9090                     | -                                                                                                                    |
-| **KafkaUI**                | http://localhost:8082/                    | Host: `kafka` Порт: `9092`                                                                                           |
-| **Mongo Express**          | http://localhost:8083/                    | Логин/пароль: `admin` / `admin`                                                                                      |                                                                                    
-| **Redis Commander**        | http://localhost:8084/                    | Логин/пароль: `admin` / `admin`                                                                                      |                                                                                    
-|                            |                                           |                                                                                                                      |
-|                            | **БД**                                    |                                                                                                                      |
-|                            |                                           |                                                                                                                      |
-| **MinIO**                  | http://localhost:9001                     | Логин: `minioadmin` Пароль: `minioadmin` Host: `minio` Порт: `9000`                                                  |
-| **PostgreSQL**             |                                           | Логин: `airflow` Пароль: `airflow` Host: `localhost` / `postgres-db` Порт: `5432` Database: `learn_base` / `airflow` |
-| **Clickhouse**             |                                           | Логин: `default` Пароль: `пусто` Host: `localhost` / `clickhouse` Порт: `8123` Database `default`                    |
-| **MongoDB**                |                                           | Логин: `mongouser` Пароль: `mongopass` Host: `localhost` / `mongodb` Порт: `27018` / `27017`                         |
-| **Redis**                  |                                           | Пароль: `redispass` Host: `redis` Порт: `6379`                                                                       |
-|                            |                                           |                                                                                                                      |
-|                            | **Мониторинг**                            |                                                                                                                      |
-|                            |                                           |                                                                                                                      |
-| **SparkUI - master**       | http://localhost:8085                     | `spark://spark-master:7077`                                                                                          |
-| **SparkUI - worker 1**     | http://localhost:8086/                    |                                                                                                                      |
-| **SparkUI - worker 2**     | http://localhost:8087/                    |                                                                                                                      |
-| **Spark Master метрики**   | http://localhost:8085/metrics/prometheus/ |                                                                                                                      |
-| **Spark Worker 1 метрики** | http://localhost:8086/metrics/prometheus/ |                                                                                                                      |
-| **Spark Worker 2 метрики** | http://localhost:8087/metrics/prometheus/ |                                                                                                                      |
-| **cAdvisor**               | http://localhost:8081/                    |                                                                                                                      |
+| Сервис                     | Ссылка                                    | Учетные данные                           | Параметры подключения                                                             |
+|----------------------------|-------------------------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
+| **Jupyter**                | http://localhost:8888                     | Токен: `dataengineer`                    |                                                                                   |
+| **Airflow**                | http://localhost:8080                     | Логин: `admin` Пароль: `admin`           |                                                                                   |
+| **Superset**               | http://localhost:8088                     | Логин: `admin` Пароль: `admin`           |                                                                                   |
+| **Grafana**                | http://localhost:3000                     | Логин: `admin` Пароль: `admin`           |                                                                                   |
+| **Prometheus**             | http://localhost:9090                     | -                                        |                                                                                   |
+| **KafkaUI**                | http://localhost:8082/                    |                                          | Host: `kafka` Порт: `9092`                                                       |
+| **Mongo Express**          | http://localhost:8083/                    | Логин/пароль: `admin` / `admin`          |                                                                                   |                                                                                    
+| **Redis Commander**        | http://localhost:8084/                    | Логин/пароль: `admin` / `admin`          |                                                                                   |                                                                                    
+|                            |                                           |                                          |                                                                                   |
+|                            | **БД**                                    |                                          |                                                                                   |
+|                            |                                           |                                          |                                                                                   |
+| **MinIO**                  | http://localhost:9001                     | Логин: `minioadmin` Пароль: `minioadmin` | Host: `minio` Порт: `9000`                                                        |
+| **PostgreSQL**             |                                           | Логин: `airflow` Пароль: `airflow`       | Host: `localhost` / `postgres-db` Порт: `5432` Database: `learn_base` / `airflow` |
+| **Clickhouse**             |                                           | Логин: `default` Пароль: `пусто`         | Host: `localhost` / `clickhouse` Порт: `8123` Database `default`                  |
+| **MongoDB**                |                                           | Логин: `mongouser` Пароль: `mongopass`   | Host: `localhost` / `mongodb` Порт: `27018` / `27017`                             |
+| **Redis**                  |                                           | Пароль: `redispass`                      | Host: `redis` Порт: `6379`                                                        |
+|                            |                                           |                                          |                                                                                   |
+|                            | **Мониторинг**                            |                                          |                                                                                   |
+|                            |                                           |                                          |                                                                                   |
+| **SparkUI - master**       | http://localhost:8085                     |                                          | `spark://spark-master:7077`                                                                                  |
+| **SparkUI - worker 1**     | http://localhost:8086/                    |                                          |                                                                                   |
+| **SparkUI - worker 2**     | http://localhost:8087/                    |                                          |                                                                                   |
+| **Spark Master метрики**   | http://localhost:8085/metrics/prometheus/ |                                          |                                                                                   |
+| **Spark Worker 1 метрики** | http://localhost:8086/metrics/prometheus/ |                                          |                                                                                   |
+| **Spark Worker 2 метрики** | http://localhost:8087/metrics/prometheus/ |                                          |                                                                                   |
+| **cAdvisor**               | http://localhost:8081/                    |                                          |                                                                                   |
 
 ## Spark
 
@@ -66,9 +66,9 @@ drivers = [
         "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
 
     
-    # ==================== CLICKHOUSE ====================
+     # ==================== CLICKHOUSE ====================
     # ClickHouse JDBC Driver
-        "/opt/spark/external-jars/clickhouse-jdbc-0.6.5-all.jar",
+        "/opt/spark/external-jars/clickhouse-jdbc-0.4.6-all.jar",
 
     
     # ==================== MONGODB ====================
@@ -82,13 +82,15 @@ drivers = [
         "/opt/spark/external-jars/bson-5.3.0.jar",
 
     
-    
-    
     # ==================== REDIS ====================
     # Spark Redis Connector
         "/opt/spark/external-jars/spark-redis_2.12-3.1.0.jar",
     # Jedis - Redis Java client
-        "/opt/spark/external-jars/jedis-5.2.0.jar"
+        "/opt/spark/external-jars/jedis-3.9.0.jar",
+    # Commons Pool2 - connection pooling
+        "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
+    # SLF4J (Simple Logging Facade for Java)
+        "/opt/spark/external-jars/slf4j-api-1.7.30.jar",
 ]
 
 spark = (SparkSession.builder
