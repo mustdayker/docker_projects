@@ -37,76 +37,235 @@
 
 Подгружаются в сессию следующей конструкцией:
 
+### MiniO
+
+> Настройки MinIO прописаны в конфиге и подгружаются автоматически при старте сессии
+
 ```python
 from pyspark.sql import SparkSession
 
 drivers = [
     # ==================== MINIO / S3 ====================
     # Hadoop AWS integration - provides s3a:// filesystem support
-        "/opt/spark/external-jars/hadoop-aws-3.3.4.jar",
+        "/opt/spark/external-jars/minio/hadoop-aws-3.3.4.jar",
     # AWS Java SDK - low-level S3 API implementation
-        "/opt/spark/external-jars/aws-java-sdk-bundle-1.12.262.jar",
+        "/opt/spark/external-jars/minio/aws-java-sdk-bundle-1.12.262.jar",
     # WildFly OpenSSL - for SSL/TLS connections (optional)
-        "/opt/spark/external-jars/wildfly-openssl-1.0.7.Final.jar",
-    # ==================== ICEBERG ====================
-    # Apache Iceberg
-        "/opt/spark/external-jars/iceberg-spark-runtime-3.5_2.12-1.6.1.jar",    
-    
-    
-    # ==================== POSTGRESQL ====================
-    # PostgreSQL JDBC Driver
-        "/opt/spark/external-jars/postgresql-42.6.0.jar",
-
-    
-    # ==================== KAFKA ====================
-    # Spark SQL Kafka Connector - read/write from Kafka
-        "/opt/spark/external-jars/spark-sql-kafka-0-10_2.12-3.5.0.jar",
-    # Kafka Clients - core Kafka protocol
-        "/opt/spark/external-jars/kafka-clients-3.2.0.jar",
-    # Spark Token Provider - for secure Kafka
-        "/opt/spark/external-jars/spark-token-provider-kafka-0-10_2.12-3.5.0.jar",
-    # Commons Pool2 - connection pooling for Kafka
-        "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
-
-    
-     # ==================== CLICKHOUSE ====================
-    # ClickHouse JDBC Driver
-        "/opt/spark/external-jars/clickhouse-jdbc-0.4.6-all.jar",
-
-    
-    # ==================== MONGODB ====================
-    # MongoDB Spark Connector (основной коннектор)
-        "/opt/spark/external-jars/mongo-spark-connector_2.12-10.4.0.jar",
-    # MongoDB Java Driver Sync (синхронный драйвер)
-        "/opt/spark/external-jars/mongodb-driver-sync-5.3.0.jar",
-    # MongoDB Driver Core (ядро драйвера)
-        "/opt/spark/external-jars/mongodb-driver-core-5.3.0.jar",
-    # BSON библиотека (обязательная зависимость)
-        "/opt/spark/external-jars/bson-5.3.0.jar",
-
-    
-    # ==================== REDIS ====================
-    # Spark Redis Connector
-        "/opt/spark/external-jars/spark-redis_2.12-3.1.0.jar",
-    # Jedis - Redis Java client
-        "/opt/spark/external-jars/jedis-3.9.0.jar",
-    # Commons Pool2 - connection pooling
-        "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
-    # SLF4J (Simple Logging Facade for Java)
-        "/opt/spark/external-jars/slf4j-api-1.7.30.jar",
-
-
-
-
+        "/opt/spark/external-jars/minio/wildfly-openssl-1.0.7.Final.jar",
 ]
 
 spark = (SparkSession.builder
-         .appName("jupyter-spark")
+         .appName("Iceberg")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+         .getOrCreate()
+)
+```
+
+### Iceberg + MinIO
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== MINIO / S3 ====================
+    # Hadoop AWS integration - provides s3a:// filesystem support
+        "/opt/spark/external-jars/minio/hadoop-aws-3.3.4.jar",
+    # AWS Java SDK - low-level S3 API implementation
+        "/opt/spark/external-jars/minio/aws-java-sdk-bundle-1.12.262.jar",
+    # WildFly OpenSSL - for SSL/TLS connections (optional)
+        "/opt/spark/external-jars/minio/wildfly-openssl-1.0.7.Final.jar",
+    # ==================== ICEBERG ====================
+    # Apache Iceberg
+        "/opt/spark/external-jars/iceberg/iceberg-spark-runtime-3.5_2.12-1.6.1.jar",    
+]
+
+spark = (SparkSession.builder
+         .appName("Iceberg")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+    # Inceberg конфигурация
+         .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+         .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog")
+         .config("spark.sql.catalog.iceberg.type", "hadoop")
+         .config("spark.sql.catalog.iceberg.warehouse", "s3a://iceberg-warehouse/")
+         .config("spark.sql.catalog.iceberg.io-impl", "org.apache.iceberg.hadoop.HadoopFileIO")
+         .getOrCreate()
+)
+```
+
+### PostgreSQL
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== POSTGRESQL ====================
+    # PostgreSQL JDBC Driver
+        "/opt/spark/external-jars/postgre/postgresql-42.6.0.jar",
+]
+
+spark = (SparkSession.builder
+         .appName("redis-spark")
          .master("spark://spark-master:7077")
          .config("spark.jars", ",".join(drivers))
          .getOrCreate()
         )
+
+db_name = "learn_base"
+jdbc_url = f"jdbc:postgresql://postgres-db:5432/{db_name}"
+postgres_con = {
+    "user": "airflow",
+    "password": "airflow", 
+    "driver": "org.postgresql.Driver"
+}
+schema_name = "schema"
+table_name = "table"
+
+df = (spark.read
+           .format("jdbc")
+           .option("url", jdbc_url)
+           .options(**postgres_con)  
+           .option("dbtable", f"{schema_name}.{table_name}")
+           .load()
+)
+
 ```
+
+### Kafka
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== KAFKA ====================
+    # Spark SQL Kafka Connector - read/write from Kafka
+        "/opt/spark/external-jars/kafka/spark-sql-kafka-0-10_2.12-3.5.0.jar",
+    # Kafka Clients - core Kafka protocol
+        "/opt/spark/external-jars/kafka/kafka-clients-3.2.0.jar",
+    # Spark Token Provider - for secure Kafka
+        "/opt/spark/external-jars/kafka/spark-token-provider-kafka-0-10_2.12-3.5.0.jar",
+    # Commons Pool2 - connection pooling for Kafka
+        "/opt/spark/external-jars/kafka/commons-pool2-2.11.1.jar",
+]
+
+spark = (SparkSession.builder
+         .appName("KafkaStreaming")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+         .config("spark.sql.shuffle.partitions", 5)
+         .getOrCreate())
+
+```
+
+
+### ClickHouse
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+     # ==================== CLICKHOUSE ====================
+    # ClickHouse JDBC Driver
+        "/opt/spark/external-jars/clickhouse/clickhouse-jdbc-0.4.6-all.jar",
+]
+
+spark = (SparkSession.builder
+         .appName("clickhouse-spark")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+         .getOrCreate()
+        )
+
+db_name = "default"
+jdbc_url = f"jdbc:clickhouse://clickhouse:8123/{db_name}"
+clickhouse_con = {
+         "driver": "com.clickhouse.jdbc.ClickHouseDriver",
+         "user": "default",
+         "password": "",
+}
+
+df = (spark.read
+           .format("jdbc")
+           .option("url", jdbc_url)
+           .options(**clickhouse_con)     
+           .option("dbtable", "users")
+           .load()
+)
+```
+
+
+### MongoDB
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== MONGODB ====================
+    # MongoDB Spark Connector (основной коннектор)
+        "/opt/spark/external-jars/mongodb/mongo-spark-connector_2.12-10.4.0.jar",
+    # MongoDB Java Driver Sync (синхронный драйвер)
+        "/opt/spark/external-jars/mongodb/mongodb-driver-sync-5.3.0.jar",
+    # MongoDB Driver Core (ядро драйвера)
+        "/opt/spark/external-jars/mongodb/mongodb-driver-core-5.3.0.jar",
+    # BSON библиотека (обязательная зависимость)
+        "/opt/spark/external-jars/mongodb/bson-5.3.0.jar",
+]
+
+spark = (SparkSession.builder
+         .appName("mongodb-Spark")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+    # MongoDB конфигурация         
+         .config("spark.mongodb.connection.uri", "mongodb://mongouser:mongopass@mongodb:27017/?authSource=admin")
+         .getOrCreate()
+        )
+
+database_name = "mongo_database"
+collection_name = "test"
+
+df = (spark.read
+           .format("mongodb")
+           .option("database", database_name)
+           .option("collection", collection_name)
+           .load()
+)   
+```
+
+
+### Redis
+
+```python
+from pyspark.sql import SparkSession
+
+drivers = [
+    # ==================== REDIS ====================
+    # Spark Redis Connector
+        "/opt/spark/external-jars/redis/spark-redis_2.12-3.1.0.jar",
+    # Jedis - Redis Java client
+        "/opt/spark/external-jars/redis/jedis-3.9.0.jar",
+    # Commons Pool2 - connection pooling
+        "/opt/spark/external-jars/redis/commons-pool2-2.11.1.jar",
+    # SLF4J (Simple Logging Facade for Java)
+        "/opt/spark/external-jars/redis/slf4j-api-1.7.30.jar",
+]
+
+spark = (SparkSession.builder
+         .appName("redis-spark")
+         .master("spark://spark-master:7077")
+         .config("spark.jars", ",".join(drivers))
+    # Redis конфигурация
+         .config("spark.redis.host", "redis")
+         .config("spark.redis.port", "6379")
+         .config("spark.redis.auth", "redispass")
+         .getOrCreate()
+        )
+```
+
+
+
+
+
 
 Описание зависимостей:
 
