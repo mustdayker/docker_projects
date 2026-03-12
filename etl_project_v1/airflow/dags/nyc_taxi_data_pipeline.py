@@ -83,10 +83,10 @@ with DAG(
     )
 
     spark_drivers = [
-        "/opt/spark/external-jars/hadoop-aws-3.3.4.jar",
-        "/opt/spark/external-jars/aws-java-sdk-bundle-1.12.262.jar",
-        "/opt/spark/external-jars/wildfly-openssl-1.0.7.Final.jar",
-        "/opt/spark/external-jars/postgresql-42.6.0.jar",
+        "/opt/spark/external-jars/minio/hadoop-aws-3.3.4.jar",
+        "/opt/spark/external-jars/minio/aws-java-sdk-bundle-1.12.262.jar",
+        "/opt/spark/external-jars/minio/wildfly-openssl-1.0.7.Final.jar",
+        "/opt/spark/external-jars/postgre/postgresql-42.6.0.jar",
     ]
 
 
