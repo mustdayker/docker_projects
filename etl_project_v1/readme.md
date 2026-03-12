@@ -48,7 +48,10 @@ drivers = [
         "/opt/spark/external-jars/aws-java-sdk-bundle-1.12.262.jar",
     # WildFly OpenSSL - for SSL/TLS connections (optional)
         "/opt/spark/external-jars/wildfly-openssl-1.0.7.Final.jar",
-
+    # ==================== ICEBERG ====================
+    # Apache Iceberg
+        "/opt/spark/external-jars/iceberg-spark-runtime-3.5_2.12-1.6.1.jar",    
+    
     
     # ==================== POSTGRESQL ====================
     # PostgreSQL JDBC Driver
@@ -91,6 +94,10 @@ drivers = [
         "/opt/spark/external-jars/commons-pool2-2.11.1.jar",
     # SLF4J (Simple Logging Facade for Java)
         "/opt/spark/external-jars/slf4j-api-1.7.30.jar",
+
+
+
+
 ]
 
 spark = (SparkSession.builder
