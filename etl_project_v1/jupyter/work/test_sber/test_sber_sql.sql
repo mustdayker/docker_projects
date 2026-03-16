@@ -105,20 +105,100 @@ FROM test_sber.clients
 -- Мы ищем именно факт роста, процентное изменение, или абсолютное изменение продаж
 -- Тут прям напрашивается уточнение ТЗ
 -- В общем сделал так и так
+
 SELECT 
                            product_id,
                            sale_month,
                            revenue,
-                       LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) AS "revenue_lag1",
-             revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) AS "revenue_change_lag1",
-(revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month)) / 
-           LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) * 100       AS "percent",
+                       LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month)        AS "revenue_lag1",
+             revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month)        AS "revenue_change_lag1",
+            (revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month)) / 
+                       LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) * 100  AS "percent",
     CASE
         WHEN           LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) IS NULL THEN 'Нет данных'
         WHEN revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) > 0     THEN 'Рост'
         WHEN revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) = 0     THEN 'Плато'
         WHEN revenue - LAG(revenue, 1) OVER(PARTITION BY product_id ORDER BY sale_month) < 0     THEN 'Падение'
-    END                                                                                  AS "grow_status"
+    END                                                                                         AS "grow_status"
 FROM test_sber.sales
 ORDER BY 1,2
+;
+
+-- Задание 8
+
+WITH RECURSIVE dept_tree AS (
+    -- Базовый запрос
+    -- Формирует родительский уровень
+    SELECT 
+          dept_id,
+          parent_dept_id,
+          dept_name,
+          1                        AS level,
+          dept_name::VARCHAR(1000) AS path
+    FROM  test_sber.departments
+    WHERE parent_dept_id IS NULL
+    
+    UNION ALL
+
+    -- Рекурсивная часть
+    -- На каждой итерации обрабатываются только отделы найденные на предыдущем шаге
+    -- Когда результатом JOIN получаем 0 строк, рекурсия останавливается
+    -- Шаги происходят под капотом WITH RECURSIVE, функция хранит рабочий набор значений с предыдущего шага
+    SELECT 
+               d.dept_id,
+               d.parent_dept_id,
+               d.dept_name,
+               dt.level + 1, 
+              (dt.path || ' -> ' || d.dept_name)::VARCHAR(1000)
+    FROM       test_sber.departments AS d
+    INNER JOIN dept_tree             AS dt ON d.parent_dept_id = dt.dept_id
+)
+SELECT 
+   	  	 dept_id,
+    	 parent_dept_id,
+    	 dept_name,
+    	 level,
+    	 path
+FROM     dept_tree
+ORDER BY path;
+
+
+
+
+
+
+-- Задание 9
+
+-- Пользователи без заказов будут с NULL в поле order_id
+-- Для того чтобы вывести по одной записи в каждой группе используем конструкцию DISTINCT ON
+
+-- Что касается выбора поля для сортировки:
+--      Сначала может показаться что выбор даты заказа логичнее, 
+--      но на практике бывает корректнее выбрать именно ID заказа, так как CRM система дает ID строго по порядку, 
+--      а регистрация даты заказа может галюционировать особенно в долях секунд
+
+SELECT DISTINCT ON (u.user_id)
+          u.user_id, 
+          u.username,
+          o.order_id,
+          o.order_date
+FROM      test_sber.users  AS u
+LEFT JOIN test_sber.orders AS o ON u.user_id = o.user_id
+ORDER BY  u.user_id, 
+          o.order_id DESC
+;
+
+
+-- В MSSQL есть вот такая конструкция, сработает аналонично верхнему скрипту
+
+SELECT TOP 1 WITH TIES
+    	  u.user_id, 
+    	  u.username,
+    	  o.order_id,
+    	  o.order_date
+FROM      test_sber.users  AS u
+LEFT JOIN test_sber.orders AS o ON u.user_id = o.user_id
+ORDER BY  ROW_NUMBER() OVER (PARTITION BY u.user_id ORDER BY o.order_id DESC);
+
+
 
