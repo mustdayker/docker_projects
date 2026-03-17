@@ -202,3 +202,69 @@ ORDER BY  ROW_NUMBER() OVER (PARTITION BY u.user_id ORDER BY o.order_id DESC);
 
 
 
+
+
+-- Задание 10
+
+EXPLAIN
+SELECT 
+         p.product_id, 
+     SUM(s.revenue)         AS total_revenue
+FROM     test_sber.products AS p
+JOIN     test_sber.sales    AS s ON p.product_id = s.product_id
+GROUP BY p.product_id
+ORDER BY total_revenue DESC 
+LIMIT 10
+
+
+---------------
+Limit (cost=238.94..238.97 rows=10 width=36) -- Ограничение строк
+  -> Sort  (cost=238.94..238.99 rows=20 width=36) -- Сортировка результата
+     Sort Key: (sum(s.revenue)) DESC              -- условия сортировки
+       -> HashAggregate  (cost=238.26..238.51 rows=20 width=36) -- Агрегация с использованием хэширования
+          Group Key: p.product_id                               -- группировка по полю product_id
+            -> Hash Join  (cost=1.45..188.26 rows=10000 width=10) -- Соединение таблиц через хэш таблицу
+               Hash Cond: (s.product_id = p.product_id)           -- по полю product_id
+                 -> Seq Scan on sales s  (cost=0.00..155.00 rows=10000 width=10)   -- Сканирование таблицы sales (10к строк)
+                 -> Hash (cost=1.20..1.20 rows=20 width=4)                         -- Создание хэш таблицы в памяти
+                      -> Seq Scan on products p  (cost=0.00..1.20 rows=20 width=4) -- Сканирование таблицы products (20 строк)
+
+----------------
+
+EXPLAIN
+WITH agg AS (
+             SELECT   s.product_id, SUM(s.revenue) AS total_revenue
+             FROM     test_sber.sales AS s
+             GROUP BY s.product_id
+            )
+SELECT 
+         p.product_id, 
+         a.total_revenue
+FROM     test_sber.products AS p
+JOIN     agg                AS a ON p.product_id = a.product_id
+ORDER BY total_revenue DESC 
+LIMIT 10
+
+-------------------
+Limit (cost=207.40..207.42 rows=10 width=36)
+  -> Sort (cost=207.40..207.45 rows=20 width=36)
+     Sort Key: a.total_revenue DESC
+       -> Hash Join  (cost=205.70..206.96 rows=20 width=36)  -- А вот и наш профит, JOIN упал с 30 до 1
+          Hash Cond: (p.product_id = a.product_id)
+            -> Seq Scan on products p  (cost=0.00..1.20 rows=20 width=4)
+            -> Hash (cost=205.45..205.45 rows=20 width=36)
+                 -> Subquery Scan on a  (cost=205.00..205.45 rows=20 width=36)
+                      ->  HashAggregate  (cost=205.00..205.25 rows=20 width=36)  -- Агрегация раньше, те же 50
+                          Group Key: s.product_id
+                              ->  Seq Scan on sales s  (cost=0.00..155.00 rows=10000 width=10)  -- Фулл скан, те же 155
+--------------------------
+
+
+
+ANALYZE test_sber.products;
+ANALYZE test_sber.sales;
+
+
+
+
+
