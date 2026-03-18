@@ -1,0 +1,28 @@
+{
+  "store": {
+    "items": [
+      {
+        "id": 1,
+        "price": 100
+      },
+      {
+        "id": 2,
+        "price": 50
+      }
+    ]
+  },
+  "cart": {
+    "total": 150,
+    "products": [
+      {
+        "price": 100
+      },
+      {
+        "price": 50
+      }
+    ]
+  },
+  "sale": {
+    "price": 75
+  }
+}
